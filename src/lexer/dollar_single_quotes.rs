@@ -59,7 +59,7 @@ pub fn tokenize_dollar_single_quotes(
 
                 // Not an allowed character :
                 return Err(format!(
-                    "\\c not followed by a Circumflex Control Character at index {}",
+                    r"\c not followed by a Circumflex Control Character at index {}",
                     pointer
                 )
                 .into());
@@ -70,7 +70,7 @@ pub fn tokenize_dollar_single_quotes(
                 increment_pointer!(pointer, content, start, char);
                 if !char.is_ascii_hexdigit() {
                     return Err(format!(
-                        "\\x not followed by a hexadecimal character at index {}",
+                        r"\x not followed by a hexadecimal character at index {}",
                         pointer
                     )
                     .into());
@@ -97,7 +97,7 @@ pub fn tokenize_dollar_single_quotes(
             // Bash-specific : \E, \?, \uHHHH, \UHHHHHHHH currently not supported.
 
             // Backslash matched nothing :
-            return Err(format!("\\ followed by an invalid character at index {}", pointer).into());
+            return Err(format!(r"\ followed by an invalid character at index {}", pointer).into());
         }
     }
 
@@ -120,6 +120,14 @@ mod tests {
             );
         }};
     }
+    macro_rules! test_throws {
+        ($string:expr, $start:expr, $throws:expr) => {{
+            assert_eq!(
+                $throws,
+                tokenize_dollar_single_quotes(&String::from($string), $start).unwrap_err().to_string()
+            );
+        }};
+    }
     // Test tip : Selecting inside the test string from start to end `'` should match with the pointer
     // value that you get returned (length-1 = pointer, your pointer should point 1 char after `'`)
     #[test]
@@ -128,5 +136,60 @@ mod tests {
         test!(r"$'Hello, World!\nThis is a new line.'", 1, 1);
         test!(r" $'Column1\t' is valid", 1, 13);
         test!(r"echo $'This is a backslash: \\' Alrighty", 5, 31);
+        test!(r"$'Line1\nLine2\tTabbed'", 0, 23);
+        test!(r"$'It'\''s a test'", 0, 5);
+        test!(r"$'Hello, $USER!'", 0, 16);
+        test!(r"$'Special chars: !@#$%^&*()'", 0, 28);
+        test!(r"$'Hello World'", 0, 14);
+    }
+
+    #[test]
+    fn test_backslash_simple_characters() {
+        // \t \n \a etc.
+        // To check pointers are correct we can put \c0 immediately after which, if the \ is
+        // detected it should throw an error due to c0 thus verifying pointer is correct.
+        test_throws!(r"$'Hello \t\c0'", 0, r"\c not followed by a Circumflex Control Character at index 12");
+        test_throws!(r"$'Hello World \n\c0'", 0, r"\c not followed by a Circumflex Control Character at index 18");
+        test_throws!(r"$'Hello World \n \f \r \c0'", 0, r"\c not followed by a Circumflex Control Character at index 25");
+        test_throws!(r"$'Hello World \n\f\r\c0'", 0, r"\c not followed by a Circumflex Control Character at index 22");
+
+
+        test!(r"$'Hello World \n\ca' OK", 0, 20);
+        test!(r"$'Hello World \n\f\r'", 0, 21);
+    }
+
+    #[test]
+    fn test_backslash_control_char() {
+        // test a-Z :
+        test!(r"$'Hello World \ca' OK", 0, 18);
+        test!(r"$'Hello World \cA' OK", 0, 18);
+        test!(r"$'Hello World \cW' OK", 0, 18);
+        test!(r"$'Hello World \cw' OK", 0, 18);
+        test!(r"$'Hello World \cz' OK", 0, 18);
+        test!(r"$'Hello World \cZ' OK", 0, 18);
+        test_throws!(r"$'Hello World \c0' OK", 0, r"\c not followed by a Circumflex Control Character at index 16");
+        test_throws!(r"$'Hello World \c9' OK", 0, r"\c not followed by a Circumflex Control Character at index 16");
+        test_throws!(r"$'Hello World \c-' OK", 0, r"\c not followed by a Circumflex Control Character at index 16");
+
+        // Test valid more complex :
+        test!(r"$'Hello World \c_' OK", 0, 18);
+        test!(r"$'Hello World \c_______' OK", 0, 24);
+        test!(r"$'Hello World \c?' OK", 0, 18);
+        test!(r"$'Hello World \c??\c?' OK", 0, 22);
+        test!(r"$'Hello World \c[\c]' OK", 0, 21);
+        test!(r"$'Hello World \c]' OK", 0, 18);
+        test!(r"$'Hello World \c[][][]' OK", 0, 23);
+        test!(r"$'Hello World \c^\n' OK", 0, 20);
+        test!(r"$'Hello World \c^6' OK", 0, 19);
+        test!(r"$'Hello World \c^^^^' OK", 0, 21);
+
+        // Test it sets pointer correctly :
+        test_throws!(r"$'Hello World \ca\c0' OK", 0, r"\c not followed by a Circumflex Control Character at index 19");
+        test_throws!(r"$'Hello World \c_\c0' OK", 0, r"\c not followed by a Circumflex Control Character at index 19");
+
+        // Test backslash error and valid :
+        test_throws!(r"$'Hello World \c\' OK", 0, r"\c not followed by a Circumflex Control Character at index 17");
+        test_throws!(r"$'Hello World \c\\\c0' OK", 0, r"\c not followed by a Circumflex Control Character at index 20");
+        test!(r"$'Hello World \c\\ \n \t' OK", 0, 25);
     }
 }
