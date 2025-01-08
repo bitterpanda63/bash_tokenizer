@@ -1,7 +1,16 @@
 [package]
 name = "bash_tokenizer"
+description = "Tokenizer for Bash Shell Language"
 version = "0.1.0"
+keywords = ["sh", "bash","tokenizer"]
 edition = "2021"
 license = "AGPL-3.0"
+repository = "https://github.com/bitterpanda63/bash_tokenizer"
+include = [
+    "src/**/*.rs",
+    "Cargo.toml",
+    "LICENSE",
+]
+
 
 [dependencies]
