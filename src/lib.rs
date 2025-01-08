@@ -1,10 +1,10 @@
+use crate::lexer::dollar_single_quotes::tokenize_dollar_single_quotes;
 use crate::lexer::metacharacter::tokenize_metacharacter;
 use crate::lexer::number::tokenize_number;
 use crate::lexer::single_quotes::tokenize_single_quotes;
 use crate::lexer::whitespace::tokenize_whitespace;
 use crate::tokens::tokens::Token;
 use std::error::Error;
-use crate::lexer::dollar_single_quotes::tokenize_dollar_single_quotes;
 
 pub mod lexer;
 pub mod tokens;
@@ -41,7 +41,7 @@ pub fn tokenize(s: String) -> Result<Vec<Token>, Box<dyn Error>> {
             pointer = single_quotes_pointer;
             continue;
         }
-        
+
         // Dollar-Single-Quote strings :
         let dsq_result = tokenize_dollar_single_quotes(&s, pointer);
         if dsq_result.is_err() {
