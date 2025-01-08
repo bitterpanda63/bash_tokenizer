@@ -46,7 +46,6 @@ pub fn tokenize_double_quotes(
             // Section 2.6.3 of IEEE 1003.1-2024
             continue; // TO DO: Implement
         }
-
     }
     Ok(pointer + 1) // We always point to the character that is excluded
 }
@@ -56,7 +55,5 @@ mod tests {
     use crate::lexer::double_quotes::tokenize_double_quotes;
 
     #[test]
-    pub fn test_tokenize_double_quotes_basic() {
-
-    }
+    pub fn test_tokenize_double_quotes_basic() {}
 }
