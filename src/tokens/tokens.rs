@@ -1,8 +1,9 @@
 #[derive(Debug, PartialEq)]
 pub enum Token {
     WhiteSpace,
-    SingleQuoteString,
-    DoubleQuoteString,
+    SingleQuote,
+    DoubleQuote,
+    DollarSingleQuote,
     Keyword,
     Number,
     // Metacharacters :
