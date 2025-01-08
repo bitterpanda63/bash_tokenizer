@@ -1,6 +1,6 @@
 use crate::lexer::metacharacter::tokenize_metacharacter;
 use crate::lexer::number::tokenize_number;
-use crate::lexer::single_quote_string::tokenize_single_quote_string;
+use crate::lexer::single_quotes::tokenize_single_quotes;
 use crate::lexer::whitespace::tokenize_whitespace;
 use crate::tokens::tokens::Token;
 use std::error::Error;
@@ -29,14 +29,14 @@ pub fn tokenize(s: String) -> Result<Vec<Token>, Box<dyn Error>> {
         }
 
         // Single-Quote strings :
-        let sq_string_result = tokenize_single_quote_string(&s, pointer);
-        if sq_string_result.is_err() {
-            return Err(sq_string_result.unwrap_err());
+        let single_quotes_result = tokenize_single_quotes(&s, pointer);
+        if single_quotes_result.is_err() {
+            return Err(single_quotes_result.unwrap_err());
         }
-        let sq_string_pointer = sq_string_result?;
-        if sq_string_pointer != pointer {
+        let single_quotes_pointer = single_quotes_result?;
+        if single_quotes_pointer != pointer {
             result.push(Token::SingleQuoteString);
-            pointer = sq_string_pointer;
+            pointer = single_quotes_pointer;
             continue;
         }
 
