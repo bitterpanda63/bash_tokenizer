@@ -4,6 +4,8 @@ use crate::lexer::single_quotes::tokenize_single_quotes;
 use crate::lexer::whitespace::tokenize_whitespace;
 use crate::tokens::tokens::Token;
 use std::error::Error;
+use crate::lexer::dollar_single_quotes::tokenize_dollar_single_quotes;
+
 pub mod lexer;
 pub mod tokens;
 
@@ -35,7 +37,19 @@ pub fn tokenize(s: String) -> Result<Vec<Token>, Box<dyn Error>> {
         }
         let single_quotes_pointer = single_quotes_result?;
         if single_quotes_pointer != pointer {
-            result.push(Token::SingleQuoteString);
+            result.push(Token::SingleQuote);
+            pointer = single_quotes_pointer;
+            continue;
+        }
+        
+        // Dollar-Single-Quote strings :
+        let dsq_result = tokenize_dollar_single_quotes(&s, pointer);
+        if dsq_result.is_err() {
+            return Err(dsq_result.unwrap_err());
+        }
+        let dsq_pointer = dsq_result?;
+        if dsq_pointer != pointer {
+            result.push(Token::DollarSingleQuote);
             pointer = single_quotes_pointer;
             continue;
         }
