@@ -7,6 +7,12 @@ macro_rules! increment_pointer {
         $char = $content.chars().nth($pointer).unwrap();
     }};
 }
+macro_rules! decrement_pointer {
+    ($pointer:expr, $content:expr, $char:expr) => {{
+        $pointer -= 1;
+        $char = $content.chars().nth($pointer).unwrap();
+    }};
+}
 
 /// tokenize_dollar_single_quotes
 /// > [3.1.2.4 ANSI-C Quoting](https://www.gnu.org/software/bash/manual/bash.html#ANSI_002dC-Quoting)
@@ -77,7 +83,7 @@ pub fn tokenize_dollar_single_quotes(
                 }
                 increment_pointer!(pointer, content, start, char);
                 if !char.is_ascii_hexdigit() {
-                    pointer -= 1; // Reset pointer here.
+                    decrement_pointer!(pointer, content, char); // Reset pointer here.
                 }
                 continue;
             }
@@ -90,7 +96,7 @@ pub fn tokenize_dollar_single_quotes(
             }
             if octal_counter != 0 {
                 // This means it matched \ddd, so we can safely continue :
-                pointer -= 1; // Go back one character (pointer should end on octal)
+                decrement_pointer!(pointer, content, char); // Go back one character (pointer should end on octal)
                 continue;
             }
 
@@ -124,7 +130,9 @@ mod tests {
         ($string:expr, $start:expr, $throws:expr) => {{
             assert_eq!(
                 $throws,
-                tokenize_dollar_single_quotes(&String::from($string), $start).unwrap_err().to_string()
+                tokenize_dollar_single_quotes(&String::from($string), $start)
+                    .unwrap_err()
+                    .to_string()
             );
         }};
     }
@@ -148,11 +156,26 @@ mod tests {
         // \t \n \a etc.
         // To check pointers are correct we can put \c0 immediately after which, if the \ is
         // detected it should throw an error due to c0 thus verifying pointer is correct.
-        test_throws!(r"$'Hello \t\c0'", 0, r"\c not followed by a Circumflex Control Character at index 12");
-        test_throws!(r"$'Hello World \n\c0'", 0, r"\c not followed by a Circumflex Control Character at index 18");
-        test_throws!(r"$'Hello World \n \f \r \c0'", 0, r"\c not followed by a Circumflex Control Character at index 25");
-        test_throws!(r"$'Hello World \n\f\r\c0'", 0, r"\c not followed by a Circumflex Control Character at index 22");
-
+        test_throws!(
+            r"$'Hello \t\c0'",
+            0,
+            r"\c not followed by a Circumflex Control Character at index 12"
+        );
+        test_throws!(
+            r"$'Hello World \n\c0'",
+            0,
+            r"\c not followed by a Circumflex Control Character at index 18"
+        );
+        test_throws!(
+            r"$'Hello World \n \f \r \c0'",
+            0,
+            r"\c not followed by a Circumflex Control Character at index 25"
+        );
+        test_throws!(
+            r"$'Hello World \n\f\r\c0'",
+            0,
+            r"\c not followed by a Circumflex Control Character at index 22"
+        );
 
         test!(r"$'Hello World \n\ca' OK", 0, 20);
         test!(r"$'Hello World \n\f\r'", 0, 21);
@@ -167,9 +190,21 @@ mod tests {
         test!(r"$'Hello World \cw' OK", 0, 18);
         test!(r"$'Hello World \cz' OK", 0, 18);
         test!(r"$'Hello World \cZ' OK", 0, 18);
-        test_throws!(r"$'Hello World \c0' OK", 0, r"\c not followed by a Circumflex Control Character at index 16");
-        test_throws!(r"$'Hello World \c9' OK", 0, r"\c not followed by a Circumflex Control Character at index 16");
-        test_throws!(r"$'Hello World \c-' OK", 0, r"\c not followed by a Circumflex Control Character at index 16");
+        test_throws!(
+            r"$'Hello World \c0' OK",
+            0,
+            r"\c not followed by a Circumflex Control Character at index 16"
+        );
+        test_throws!(
+            r"$'Hello World \c9' OK",
+            0,
+            r"\c not followed by a Circumflex Control Character at index 16"
+        );
+        test_throws!(
+            r"$'Hello World \c-' OK",
+            0,
+            r"\c not followed by a Circumflex Control Character at index 16"
+        );
 
         // Test valid more complex :
         test!(r"$'Hello World \c_' OK", 0, 18);
@@ -184,12 +219,81 @@ mod tests {
         test!(r"$'Hello World \c^^^^' OK", 0, 21);
 
         // Test it sets pointer correctly :
-        test_throws!(r"$'Hello World \ca\c0' OK", 0, r"\c not followed by a Circumflex Control Character at index 19");
-        test_throws!(r"$'Hello World \c_\c0' OK", 0, r"\c not followed by a Circumflex Control Character at index 19");
+        test_throws!(
+            r"$'Hello World \ca\c0' OK",
+            0,
+            r"\c not followed by a Circumflex Control Character at index 19"
+        );
+        test_throws!(
+            r"$'Hello World \c_\c0' OK",
+            0,
+            r"\c not followed by a Circumflex Control Character at index 19"
+        );
 
         // Test backslash error and valid :
-        test_throws!(r"$'Hello World \c\' OK", 0, r"\c not followed by a Circumflex Control Character at index 17");
-        test_throws!(r"$'Hello World \c\\\c0' OK", 0, r"\c not followed by a Circumflex Control Character at index 20");
+        test_throws!(
+            r"$'Hello World \c\' OK",
+            0,
+            r"\c not followed by a Circumflex Control Character at index 17"
+        );
+        test_throws!(
+            r"$'Hello World \c\\\c0' OK",
+            0,
+            r"\c not followed by a Circumflex Control Character at index 20"
+        );
         test!(r"$'Hello World \c\\ \n \t' OK", 0, 25);
+    }
+
+    #[test]
+    fn test_hexadecimal() {
+        // test invalid ones :
+        test_throws!(
+            r"$'Hello \xGG' OK",
+            0,
+            r"\x not followed by a hexadecimal character at index 10"
+        );
+        test_throws!(
+            r"$'Hello \x\n' OK",
+            0,
+            r"\x not followed by a hexadecimal character at index 10"
+        );
+        test_throws!(
+            r"$'Hello \x' OK",
+            0,
+            r"\x not followed by a hexadecimal character at index 10"
+        );
+        test_throws!(
+            r"$'Hello \x-1' OK",
+            0,
+            r"\x not followed by a hexadecimal character at index 10"
+        );
+        test_throws!(
+            r"$'Hello \xH' OK",
+            0,
+            r"\x not followed by a hexadecimal character at index 10"
+        );
+
+        // Test the 2nd one is optional :
+        test!(r"$'Hello \xFG' OK", 0, 13);
+        test!(r"$'Hello \x9G' OK", 0, 13);
+        test!(r"$'Hello \xF1' OK", 0, 13);
+        test!(r"$'Hello \x7' OK", 0, 12);
+        test!(r"$'Hello \x7 ' OK", 0, 13);
+        test!(r"$'Hello \x0' OK", 0, 12);
+        test_throws!(
+            r"$'Hello \x7\c0' OK",
+            0,
+            r"\c not followed by a Circumflex Control Character at index 13"
+        );
+        test_throws!(
+            r"$'Hello \x11\c0' OK",
+            0,
+            r"\c not followed by a Circumflex Control Character at index 14"
+        );
+        test_throws!(
+            r"$'Hello \x1G\c0' OK",
+            0,
+            r"\c not followed by a Circumflex Control Character at index 14"
+        );
     }
 }
