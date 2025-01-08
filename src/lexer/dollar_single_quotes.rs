@@ -45,8 +45,14 @@ pub fn tokenize_dollar_single_quotes(
         // Check for backslashes :
         if char == '\\' {
             increment_pointer!(pointer, content, start, char);
-            if ['a', 'b', 'e', 'f', 'n', 'r', 't', 'v', '\\', '\'', '"'].contains(&char) {
+            if ['a', 'b', 'e', 'f', 'n', 'r', 't', 'v', '\\', '"'].contains(&char) {
                 continue; // Specified in IEEE 1003.1-2024
+            }
+            if char == '\'' {
+                // We want to skip over the character, but the pointer should remain intact :
+                increment_pointer!(pointer, content, start, char);
+                pointer -= 1;
+                continue;
             }
 
             // \cX yields the control character :
@@ -149,6 +155,15 @@ mod tests {
         test!(r"$'Hello, $USER!'", 0, 16);
         test!(r"$'Special chars: !@#$%^&*()'", 0, 28);
         test!(r"$'Hello World'", 0, 14);
+
+        test!(r"$'Hello 'World'", 0, 9);
+        test!(r"$'Hello \' World'", 0, 17);
+        test!("$'Hello \\\" World'", 0, 17);
+        test_throws!(
+            r"$'Hello World \'\c0'",
+            0,
+            r"\c not followed by a Circumflex Control Character at index 18"
+        );
     }
 
     #[test]
