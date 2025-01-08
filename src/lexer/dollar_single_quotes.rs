@@ -296,4 +296,47 @@ mod tests {
             r"\c not followed by a Circumflex Control Character at index 14"
         );
     }
+
+    #[test]
+    fn test_octal_support() {
+        test!(r"$'This is valid : \0 and this is also valid \7'", 0, 47);
+        test!(r"$'\0123456789'", 0, 14);
+        test!(r"$'\0\c_'", 0, 8);
+        test_throws!(
+            r"$'\012\c0'",
+            0,
+            r"\c not followed by a Circumflex Control Character at index 8"
+        );
+        test_throws!(
+            r"$'\01\c0'",
+            0,
+            r"\c not followed by a Circumflex Control Character at index 7"
+        );
+        test_throws!(
+            r"$'\0\c0'",
+            0,
+            r"\c not followed by a Circumflex Control Character at index 6"
+        );
+        test_throws!(
+            r"$'\8'",
+            0,
+            r"\ followed by an invalid character at index 3"
+        );
+        test!(r"$'\778'", 0, 7);
+        test!(r"$'\788'", 0, 7);
+    }
+
+    #[test]
+    fn test_unterminated_string() {
+        test_throws!(
+            r"$' Not terminating this string",
+            0,
+            "Unterminated dollar-single-quote at index 0"
+        );
+        test_throws!(
+            r"   $' Not terminating this string",
+            3,
+            "Unterminated dollar-single-quote at index 3"
+        );
+    }
 }
