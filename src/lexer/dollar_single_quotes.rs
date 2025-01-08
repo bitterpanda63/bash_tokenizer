@@ -106,10 +106,13 @@ fn is_ascii_octal(c: char) -> bool {
 #[cfg(test)]
 mod tests {
     use crate::lexer::dollar_single_quotes::tokenize_dollar_single_quotes;
-
+    // Test tip : Selecting inside the test string from start to end `'` should match with the pointer
+    // value that you get returned (length-1 = pointer, your pointer should point 1 char after `'`)
     #[test]
     fn test_dollar_single_quotes_simple() {
-        assert_eq!(37, tokenize_dollar_single_quotes(&String::from("$'Hello, World!\\nThis is a new line.'"), 0).unwrap());
-        assert_eq!(1, tokenize_dollar_single_quotes(&String::from("$'Hello, World!\\nThis is a new line.'"), 1).unwrap());
+        assert_eq!(37, tokenize_dollar_single_quotes(&String::from(r"$'Hello, World!\nThis is a new line.'"), 0).unwrap());
+        assert_eq!(1, tokenize_dollar_single_quotes(&String::from(r"$'Hello, World!\nThis is a new line.'"), 1).unwrap());
+        assert_eq!(13, tokenize_dollar_single_quotes(&String::from(r" $'Column1\t' is valid"), 1).unwrap());
+        assert_eq!(31, tokenize_dollar_single_quotes(&String::from(r"echo $'This is a backslash: \\' Alrighty"), 5).unwrap());
     }
 }
