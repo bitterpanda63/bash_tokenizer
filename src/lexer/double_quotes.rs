@@ -1,9 +1,9 @@
-/// tokenize_double_quote_string
+/// tokenize_double_quotes
 /// > [3.1.2.3 Double Quotes](https://www.gnu.org/software/bash/manual/bash.html#Double-Quotes)
 /// > Enclosing characters in single quotes (‘'’) preserves the literal value of each character within the quotes.
 /// > A single quote may not occur between single quotes, even when preceded by a backslash.
 /// This means that we do not have to check for anything except for the end of the string.
-pub fn tokenize_double_quote_string(
+pub fn tokenize_double_quotes(
     content: &String,
     start: usize,
 ) -> Result<usize, Box<dyn std::error::Error>> {
@@ -53,10 +53,10 @@ pub fn tokenize_double_quote_string(
 
 #[cfg(test)]
 mod tests {
-    use crate::lexer::double_quote_string::tokenize_double_quote_string;
+    use crate::lexer::double_quotes::tokenize_double_quotes;
 
     #[test]
-    pub fn test_tokenize_double_quote_string_basic() {
+    pub fn test_tokenize_double_quotes_basic() {
 
     }
 }
