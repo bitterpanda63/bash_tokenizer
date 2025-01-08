@@ -71,10 +71,7 @@ mod tests {
     #[test]
     fn test_tokenize_metacharacter_multiple_characters() {
         // Test for a string with multiple characters, only the first metacharacter should be tokenized
-        assert_eq!(
-            tokenize_metacharacter("|&;", 0),
-            Some((Token::Pipe, 1))
-        );
+        assert_eq!(tokenize_metacharacter("|&;", 0), Some((Token::Pipe, 1)));
         assert_eq!(tokenize_metacharacter("&;", 1), Some((Token::Semicolon, 2)));
         assert_eq!(
             tokenize_metacharacter("();", 1),
