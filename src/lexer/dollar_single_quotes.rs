@@ -28,13 +28,13 @@ pub fn tokenize_dollar_single_quotes(
         return Ok(start);
     }
     pointer += 1; // Skipped `$`
-    let mut char = content.chars().nth(pointer).unwrap();
+    char = content.chars().nth(pointer).unwrap();
     if char != '\'' {
         // A dollar-single-quote always starts with `$'`
         return Ok(start);
     }
 
-    while char != '\'' || pointer == start+2 { // Add 2 for the offset of `$'`
+    while char != '\'' || pointer == start+1 { // Add 1 for the offset of `$`
         increment_pointer!(pointer, content, start, char);
         char = content.chars().nth(pointer).unwrap();
 
@@ -96,7 +96,7 @@ pub fn tokenize_dollar_single_quotes(
         }
     }
 
-    Ok(pointer)
+    Ok(pointer + 1) // We always point to the character that is excluded
 }
 
 fn is_ascii_octal(c: char) -> bool {
@@ -105,8 +105,11 @@ fn is_ascii_octal(c: char) -> bool {
 
 #[cfg(test)]
 mod tests {
-    #[test]
-    fn test_dollar_single_quotes() {
+    use crate::lexer::dollar_single_quotes::tokenize_dollar_single_quotes;
 
+    #[test]
+    fn test_dollar_single_quotes_simple() {
+        assert_eq!(37, tokenize_dollar_single_quotes(&String::from("$'Hello, World!\\nThis is a new line.'"), 0).unwrap());
+        assert_eq!(1, tokenize_dollar_single_quotes(&String::from("$'Hello, World!\\nThis is a new line.'"), 1).unwrap());
     }
 }
