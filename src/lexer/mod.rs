@@ -1,3 +1,4 @@
+pub mod dollar_single_quotes;
 pub mod double_quotes;
 pub mod metacharacter;
 pub mod number;
