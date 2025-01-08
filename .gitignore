@@ -1,0 +1,27 @@
+# Compiled binary
+/target/
+
+# Rust-specific files
+**/*.rs.bk
+**/*.rs.swp
+
+# Cargo files
+/Cargo.lock
+/Cargo.toml.orig
+
+# IDE files
+.idea/
+.vscode/
+*.sublime-workspace
+*.sublime-project
+
+# Backup files
+*~
+*.bak
+*.tmp
+
+# Other files
+.DS_Store
+Thumbs.db
+
+
