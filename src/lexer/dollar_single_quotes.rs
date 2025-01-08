@@ -1,14 +1,11 @@
 macro_rules! increment_pointer {
-    ($pointer:expr, $content:expr, $start:expr, $char:expr) => {
-        {
-            $pointer += 1;
-            if $pointer >= $content.len() {
-                return Err(format!("Unterminated dollar-single-quote at index {}", $start).into());
-            }
-            $char = $content.chars().nth($pointer).unwrap();
-
+    ($pointer:expr, $content:expr, $start:expr, $char:expr) => {{
+        $pointer += 1;
+        if $pointer >= $content.len() {
+            return Err(format!("Unterminated dollar-single-quote at index {}", $start).into());
         }
-    };
+        $char = $content.chars().nth($pointer).unwrap();
+    }};
 }
 
 /// tokenize_dollar_single_quotes
@@ -23,7 +20,7 @@ pub fn tokenize_dollar_single_quotes(
     let mut char = content.chars().nth(pointer).unwrap();
 
     // Validation of `$'` start :
-    if char != '$' || !(pointer+1 < content.len()) {
+    if char != '$' || !(pointer + 1 < content.len()) {
         // Check it's a dollar single quoted string and that we can fetch the following character.
         return Ok(start);
     }
@@ -34,7 +31,8 @@ pub fn tokenize_dollar_single_quotes(
         return Ok(start);
     }
 
-    while char != '\'' || pointer == start+1 { // Add 1 for the offset of `$`
+    while char != '\'' || pointer == start + 1 {
+        // Add 1 for the offset of `$`
         increment_pointer!(pointer, content, start, char);
         char = content.chars().nth(pointer).unwrap();
 
@@ -60,18 +58,26 @@ pub fn tokenize_dollar_single_quotes(
                 }
 
                 // Not an allowed character :
-                return Err(format!("\\c not followed by a Circumflex Control Character at index {}", pointer).into());
+                return Err(format!(
+                    "\\c not followed by a Circumflex Control Character at index {}",
+                    pointer
+                )
+                .into());
             }
 
             // \xXX yields the byte whose value is the hexadecimal value XX (one or more hexadecimal digits) :
             if char == 'x' {
                 increment_pointer!(pointer, content, start, char);
                 if !char.is_ascii_hexdigit() {
-                    return Err(format!("\\x not followed by a hexadecimal character at index {}", pointer).into());
+                    return Err(format!(
+                        "\\x not followed by a hexadecimal character at index {}",
+                        pointer
+                    )
+                    .into());
                 }
                 increment_pointer!(pointer, content, start, char);
                 if !char.is_ascii_hexdigit() {
-                    pointer -= 1 ; // Reset pointer here.
+                    pointer -= 1; // Reset pointer here.
                 }
                 continue;
             }
@@ -92,7 +98,6 @@ pub fn tokenize_dollar_single_quotes(
 
             // Backslash matched nothing :
             return Err(format!("\\ followed by an invalid character at index {}", pointer).into());
-
         }
     }
 
@@ -110,9 +115,33 @@ mod tests {
     // value that you get returned (length-1 = pointer, your pointer should point 1 char after `'`)
     #[test]
     fn test_dollar_single_quotes_simple() {
-        assert_eq!(37, tokenize_dollar_single_quotes(&String::from(r"$'Hello, World!\nThis is a new line.'"), 0).unwrap());
-        assert_eq!(1, tokenize_dollar_single_quotes(&String::from(r"$'Hello, World!\nThis is a new line.'"), 1).unwrap());
-        assert_eq!(13, tokenize_dollar_single_quotes(&String::from(r" $'Column1\t' is valid"), 1).unwrap());
-        assert_eq!(31, tokenize_dollar_single_quotes(&String::from(r"echo $'This is a backslash: \\' Alrighty"), 5).unwrap());
+        assert_eq!(
+            37,
+            tokenize_dollar_single_quotes(
+                &String::from(r"$'Hello, World!\nThis is a new line.'"),
+                0
+            )
+            .unwrap()
+        );
+        assert_eq!(
+            1,
+            tokenize_dollar_single_quotes(
+                &String::from(r"$'Hello, World!\nThis is a new line.'"),
+                1
+            )
+            .unwrap()
+        );
+        assert_eq!(
+            13,
+            tokenize_dollar_single_quotes(&String::from(r" $'Column1\t' is valid"), 1).unwrap()
+        );
+        assert_eq!(
+            31,
+            tokenize_dollar_single_quotes(
+                &String::from(r"echo $'This is a backslash: \\' Alrighty"),
+                5
+            )
+            .unwrap()
+        );
     }
 }
